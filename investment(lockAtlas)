@@ -1,0 +1,32 @@
+  with atlas_activity as (
+SELECT 
+    date_trunc('hour', block_timestamp) AS date,
+    SUM(
+      CASE 
+        WHEN value:parsed:info:authority = signers[0] THEN 
+          COALESCE(ROUND(value:parsed:info:tokenAmount:uiAmount), 0)
+        ELSE 0
+      END
+    ) AS value1,
+    SUM(
+      CASE 
+        WHEN value:parsed:info:authority != signers[0] THEN 
+          COALESCE(ROUND(value:parsed:info:tokenAmount:uiAmount), 0)
+        ELSE 0
+      END
+    ) AS value2
+  FROM solana.core.fact_events,
+       LATERAL FLATTEN(input => inner_instruction:instructions)
+  WHERE program_id = 'ATLocKpzDbTokxgvnLew3d7drZkEzLzDpzwgrgWKDbmc'
+    AND value:parsed:info:mint = 'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx'
+    AND block_timestamp >= current_date() - INTERVAL '4 weeks'
+  GROUP BY 1
+)
+
+  SELECT
+    date,
+    'Currency Investment' AS type,
+    'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx' AS currency,
+    'Net ATLAS Locked' AS name,
+    value2 - value1 AS value
+  FROM atlas_activity
