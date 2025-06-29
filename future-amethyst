@@ -1,0 +1,25 @@
+with prices as (
+select * from $query('cd51883a-4298-4a8c-b94a-d370601953b9')
+)
+ crfr2x as (
+select
+tx_id,
+block_timestamp,
+signers[0] as wallet,
+value:parsed:info:tokenAmount:uiAmount as value
+from solana.core.fact_events, lateral flatten(input => inner_instruction:instructions)
+WHERE program_id = 'traderDnaR5w6Tcoi3NFm53i48FTDNbGjBSZwWXDRrg'
+AND succeeded = 'true'
+AND value:parsed:info:authority = '2oi1G8KQ1x1PeFwqXWWAP7tC3JXV3s9yS14oub5J1xun'
+        AND value:parsed:info:mint::string in ('ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx')
+         and value:parsed:info:destination != '4JNeLiZwa9AQz6iqfRXAbtZesNrfAHcM6cA7GHCicu6G'
+    AND block_timestamp >= current_date() - interval '4 weeks'
+)
+
+  SELECT
+    wallet,
+    sum(zeroifnull(value * prices.close)) as infra_contracts
+  FROM crfr2x
+  left join prices on date_trunc('day', crfr2x.block_timestamp) = prices.date
+  WHERE prices.currency = 'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx'
+  GROUP BY 1
