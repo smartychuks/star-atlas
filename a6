@@ -1,0 +1,13 @@
+SELECT
+  date_trunc('hour', block_timestamp) as date,
+  'Expenses' as type,
+  'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx' as currency,
+  'SAGE ATLAS SINKS' as name,
+  sum(value:parsed:info:amount/pow(10,8)) as value
+from solana.core.fact_events, lateral flatten(input => inner_instruction:instructions)
+WHERE program_id = 'SAGEqqFewepDHH6hMDcmWy7yjHPpyKLDnRXKb3Ki8e6'
+  AND value:parsed:info:authority = signers[0]
+  AND value:parsed:info:destination = 'FdHkzP8eWeFpNSreMiZCWzJYrcZG2GJAPSyb3gENL8fS'
+  and value:parsed:info:amount > 0         
+  and block_timestamp >= current_date() - interval '4 weeks' --AND block_timestamp < current_date
+GROUP BY 1,2
