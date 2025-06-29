@@ -1,0 +1,36 @@
+ with polis_activity as (
+ SELECT
+    date_trunc('hour', block_timestamp) AS date,
+    'Currency Investment' AS type,
+    'poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk' AS currency,
+    -- Lock: authority == signer AND instructions[1] is lock program
+    ROUND(SUM(
+      CASE 
+        WHEN value:parsed:info:authority = signers[0]
+         AND inner_instruction:instructions[1]:programId = 'Lock7kBijGCQLEFAmXcengzXKA88iDNQPriQ7TbgeyG'
+        THEN value:parsed:info:amount / POW(10,8)
+        ELSE 0
+      END
+    ), 3) AS locked,
+    -- Unlock: authority != signer AND instructions[0] is lock program
+    ROUND(SUM(
+      CASE 
+        WHEN value:parsed:info:authority != signers[0]
+         AND inner_instruction:instructions[0]:programId = 'Lock7kBijGCQLEFAmXcengzXKA88iDNQPriQ7TbgeyG'
+        THEN (value:parsed:info:amount * 0.5) / POW(10,8)
+        ELSE 0
+      END
+    ), 3) AS unlocked
+  FROM solana.core.fact_events, LATERAL FLATTEN(input => inner_instruction:instructions)
+  WHERE program_id = 'gateVwTnKyFrE8nxUUgfzoZTPKgJQZUbLsEidpG4Dp2'
+    AND block_timestamp >= current_date() - INTERVAL '4 weeks'
+  GROUP BY 1
+)
+
+  SELECT
+    date,
+    type,
+    currency,
+    'Net POLIS Locked' AS name,
+    locked - unlocked AS value
+  FROM polis_activity
