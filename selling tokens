@@ -1,0 +1,12 @@
+select
+  date_trunc('hour', block_timestamp::date) as date,
+  sum (case when mint in ('poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk')
+    then amount
+    ELSE 0 end) as POLIS_sold,
+  sum (case when mint in ('ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx')
+    then amount
+    ELSE 0 end) as ATLAS_sold
+from solana.core.fact_transfers
+  where tx_from in ('B5hX2Aj8FYmdYjXQFVF1jpz7BkrdpLXgSPs92G6DFGjA')
+and block_timestamp >= current_date() - interval '4 weeks' --AND block_timestamp < current_date
+group by 1
