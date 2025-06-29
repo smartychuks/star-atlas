@@ -1,0 +1,77 @@
+with prices1 AS (
+  select
+    DATE_TRUNC('hour', block_timestamp) AS date,
+    'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx' as currency,
+    sum(
+      case
+        when (
+          swap_from_mint = 'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx'
+          AND swap_to_mint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+        ) then swap_from_amount
+        when (
+          swap_to_mint = 'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx'
+          AND swap_from_mint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+        ) then swap_to_amount
+      end
+    ) as ATLAS,
+    sum(
+      case
+        when (
+          swap_from_mint = 'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx'
+          AND swap_to_mint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+        ) then swap_to_amount
+        when (
+          swap_to_mint = 'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx'
+          AND swap_from_mint = 'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v'
+        ) then swap_from_amount
+      end
+    ) as USDC,
+    USDC / ATLAS as close
+  from
+    solana.defi.fact_swaps
+  WHERE
+    succeeded = 'true'
+    AND block_timestamp >= DATE '2025-01-01' AND block_timestamp < DATE '2025-06-01'
+  group by
+    1
+),
+prices2 AS (
+  select
+    date,
+    'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' as currency,
+    1 as close
+  from
+    prices1
+),
+
+
+
+prices3 as (
+SELECT
+price.hour as date,
+'poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk' as currency,
+price.price as close
+from solana.price.ez_prices_hourly price 
+WHERE price.token_address = 'poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk'
+)
+
+  SELECT
+    date,
+    currency,
+    close
+  FROM
+    prices1
+  UNION
+  SELECT
+    date,
+    currency,
+    close
+  FROM
+    prices2
+  UNION
+  SELECT
+    date,
+    currency,
+    close
+  FROM
+    prices3
