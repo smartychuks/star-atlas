@@ -1,0 +1,23 @@
+with sb_tx as (
+SELECT
+  DISTINCT tx_id,
+  block_timestamp
+from solana.core.fact_events x
+WHERE program_id::string IN ('SAGE2HAwep459SNq61LHvjxPk4pLPEJLoMETef7f7EE')
+  AND x.block_timestamp >= current_date() - interval '4 weeks' --AND block_timestamp < current_date
+
+)
+
+SELECT
+  date_trunc('hour',x.block_timestamp) as date,
+  'Expenses' as type,
+  'EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v' as currency,
+  'SOL Fees' as name,
+  round(SUM(f.fee*prices.price/POW(10,9)),2) as value
+from sb_tx x
+Left JOIN solana.core.fact_transactions f using(tx_id,block_timestamp)
+left join solana.price.ez_prices_hourly prices on DATE_TRUNC('hour', x.BLOCK_TIMESTAMP) = prices.hour
+  and prices.TOKEN_ADDRESS = 'So11111111111111111111111111111111111111112'
+WHERE x.block_timestamp >= current_date() - interval '4 weeks' --AND block_timestamp < current_date
+  AND f.block_timestamp >= current_date() - interval '4 weeks' --AND block_timestamp < current_date
+GROUP BY 1
