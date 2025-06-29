@@ -1,0 +1,12 @@
+SELECT
+  date_trunc('hour', block_timestamp) as date,
+  'Expenses' as type,
+  'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx' as currency,
+  'ATLAS PRIME' as name,
+  sum(value:parsed:info:amount/pow(10,8)) as value
+from solana.core.fact_events, lateral flatten(input => inner_instruction:instructions)
+WHERE program_id = 'APR1MEny25pKupwn72oVqMH4qpDouArsX8zX4VwwfoXD'
+  and value:parsed:info:destination in ('EEybGWrgWmMu2w2JMpEorPxsPicRFqW836TzigZp9bUd','29pKvHB7RezKS2TPGqFReNJfvA716HwxHJXosTcMGjkw','6KkvJpRxc5zjtzffs4KENWs5NHhPNKtM2LBoRYstFwqA')
+  and value:parsed:info:amount > 0         
+  and block_timestamp >= current_date() - interval '4 weeks' --AND block_timestamp < current_date
+GROUP BY 1,2
