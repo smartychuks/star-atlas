@@ -1,0 +1,11 @@
+select 
+  date_trunc('hour', block_timestamp) as date,
+'Revenue' as type,
+'poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk' as currency,
+'Atlas Locker Rwds' as name,
+  zeroifnull(((value:parsed:info:tokenAmount:amount / POW(10,8) ))) as value
+from solana.core.fact_events, lateral flatten(input => inner_instruction:instructions)
+  	WHERE program_id = 'ATLocKpzDbTokxgvnLew3d7drZkEzLzDpzwgrgWKDbmc'
+AND block_timestamp >= current_date() - interval '4 weeks' --AND block_timestamp < current_date
+AND value:parsed:info:mint = 'poLisWXnNRwC6oBu1vHiuKQzFjGL4XDSu4g9qjz9qVk'
+AND value:parsed:info:authority = 'J5GhV1WKcEU98c1kZt36ixjaErrrPNWbZhg3JQDg114E'
