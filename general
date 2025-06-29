@@ -1,0 +1,139 @@
+-- with first AS  (
+  SELECT * FROM $query('c923fc33-8133-449f-a81f-c62b97474525')
+  UNION
+  SELECT * FROM $query('1307fe0a-b2d1-4535-b1af-ea34758b32f7')
+  UNION
+  SELECT * FROM $query('73f9fb53-4953-43e6-98f5-3e755fc5e9c6')
+  UNION
+  SELECT * FROM $query('5327ae44-6d52-461e-ae83-406a237cc277')
+  UNION
+  SELECT * FROM $query('dd9793ca-3a08-49b3-bed7-2af4fd7cc5ea')
+  -- UNION
+  -- SELECT * FROM a12-
+  UNION
+  SELECT * FROM $query('e98a4258-edcd-4d5a-9d56-ccf893cd7ed9')
+  -- UNION
+  -- SELECT * FROM a14
+  UNION
+  SELECT * FROM $query('e3855e1a-1424-48a0-9dd4-cac1a0f900c1')
+  UNION
+  SELECT * FROM $query('c73de52a-6839-4b0c-97f7-b1631e18dab7')
+  UNION
+  SELECT * FROM $query('50648594-2d51-4b06-ac79-ba182df59a40')
+  UNION
+  SELECT * FROM $query('6fc1e358-ab5c-4c3c-af6a-8bfab919ea79')
+  -- UNION
+  -- SELECT * FROM a20
+  -- UNION
+  -- SELECT * FROM p1
+  UNION
+  SELECT * FROM $query('f2af35e5-4446-45cb-9051-bab3024437a0')
+  UNION
+  SELECT * FROM $query('5106ea90-2249-4870-b317-fb8aa0f78cde')
+  UNION
+  SELECT * FROM $query('7cdf82ed-76ac-45bf-9496-0a3c3b1f63fa')
+  UNION
+  SELECT * FROM $query('15ba1b83-b910-4d07-b1a8-14f83fac7c9e')
+  UNION
+  SELECT * FROM $query('a6ba2da5-8d0b-474b-8386-abdf55cf7e38')
+  UNION
+  SELECT * FROM $query('b83a4424-628a-4cf2-ab8f-07983a114301')
+  UNION
+  SELECT * FROM $query('bf3bcc45-661c-44b1-a43e-cc73883ef85f')
+  UNION
+  SELECT * FROM $query('dc063ae3-dc53-4f16-a096-b2f6f343b48a')
+  UNION
+  SELECT * FROM $query('01f6cb8f-af8f-49c3-baa3-013d7e690f8c')  
+  UNION
+  SELECT * FROM $query('dc31cb3c-e42b-46f7-af00-5bf3cbefe21f')
+  UNION
+  SELECT * FROM $query('174ee523-70bd-4d28-a173-5436bcf127fa')
+-- )
+
+UNION
+SELECT * FROM $query('138ace54-72d5-4267-b853-759071cdc084') ---
+UNION
+SELECT * FROM $query('a476964b-7eee-4bb5-83fe-3ce6702c7239') ---
+UNION
+SELECT * FROM $query('c454af2a-a436-46d2-b7a6-1730b845156d')
+UNION
+SELECT * FROM $query('d07a91ed-e213-4f22-a77b-6888ed3b95cc')
+UNION
+SELECT * FROM $query('caa1f2e8-88f8-4c5e-afc8-094da089bd5a')
+UNION
+SELECT * FROM $query('4b999ac7-7e6a-431e-8109-b4cb7f1e7f02')
+UNION
+SELECT * FROM $query('9b56fc79-56fe-4a47-8995-618129325eaa')
+UNION
+SELECT * FROM $query('4b8f04b4-6559-47a7-a0b5-2f5518b5928f')
+UNION
+SELECT * FROM $query('eb532fe1-635b-4038-8a84-40bbcc3fecf8')
+UNION
+SELECT * FROM $query('ba611284-6820-4233-bf15-ce4a077256b6')
+UNION
+SELECT date, 'Revenue' as type,
+  'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx' as currency,
+  'Rental Revenue' as name, value
+FROM (
+  with ci4 as (
+SELECT
+    tx_id,
+    block_timestamp AS block_timestamp,
+    CASE 
+      WHEN inner_instruction:instructions[0]:accounts[1] = value:parsed:info:destination 
+        THEN 'Cancel Rental'
+      WHEN inner_instruction:instructions[0]:accounts[3] = value:parsed:info:destination 
+        THEN 'Pay Rental'
+    END AS type,
+    inner_instruction:instructions[0]:accounts[0] AS fleet_borrower,
+    inner_instruction:instructions[0]:accounts[1] AS borrower_token_account,
+    inner_instruction:instructions[0]:accounts[2] AS fleet_owner,
+    inner_instruction:instructions[0]:accounts[3] AS owner_token_account,
+    inner_instruction:instructions[0]:accounts[4] AS fleet,
+    inner_instruction:instructions[0]:accounts[6] AS starbase,
+    inner_instruction:instructions[0]:accounts[7] AS starbase_player,
+    inner_instruction:instructions[0]:accounts[8] AS contract,
+    inner_instruction:instructions[0]:accounts[9] AS rental_state,
+    inner_instruction:instructions[0]:accounts[10] AS rental_authority,
+    inner_instruction:instructions[0]:accounts[11] AS rental_token_account,
+    value:parsed:info:amount / POW(10,8) AS value
+  FROM solana.core.fact_events, 
+  LATERAL FLATTEN(input => inner_instruction:instructions)
+  WHERE program_id = 'AgThdyi1P5RkVeZD2rQahTvs8HePJoGFFxKtvok5s2J1'
+    AND succeeded = 'true'
+    AND value:parsed:type = 'transfer'
+    AND signers[0] = 'N3uvVVc8mCXciRhqqKZmkAGP58EDhLRWfRK9uvP7XZx'
+    AND inner_instruction:instructions[0]:accounts[5] = 'GAMEzqJehF8yAnKiTARUuhZMvLvkZVAsCVri5vSfemLr'
+    AND inner_instruction:instructions[0]:accounts[11] = value:parsed:info:source
+    AND value:parsed:info:authority = inner_instruction:instructions[0]:accounts[9]
+and block_timestamp >= current_date() - interval '4 weeks' --AND block_timestamp < current_date
+
+)
+
+select
+date_trunc('hour',block_timestamp) as date,
+'Expenses' as type,
+'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx' as currency,
+'Rental Expense' as name,
+SUM(value) as value
+from ci4
+  WHERE type ='Pay Rental'
+group by 1,2,3,4
+)
+UNION
+SELECT date,'Expenses' as type,
+  'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx' as currency,
+  'Starbased ATLAS Crafting' as name,value
+FROM (
+  select
+    date_trunc('hour', block_timestamp::date) as date,
+  'ATMTA Revenue' as type,
+  'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx' as currency,
+  'ATLAS Royalties' as name,
+  sum(case when mint = 'ATLASXmbPQxBUYbxPsV97usA3fPQYEqzQBUHgiFCUsXx'
+    then amount end) AS value
+from solana.core.fact_transfers
+where block_timestamp >= current_date() - interval '4 weeks' --AND block_timestamp < current_date
+  AND tx_to = '5a9uH9aHpdULVMAD5doXLeWGkiL5v92zk6WfK7MQbbo8'      
+group by 1
+)
